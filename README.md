@@ -79,7 +79,7 @@ Follow these steps to get a local copy of Saarthi up and running.
 1.  **Clone the repository:**
 
     ```bash
-    git clone [https://github.com/pushkar-hue/Saarthi-v2.git](https://github.com/pushkar-hue/Saarthi-v2.git)
+    git clone https://github.com/pushkar-hue/Sarthi.git
     cd Saarthi-v2
     ```
 
