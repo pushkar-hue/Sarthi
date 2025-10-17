@@ -8,6 +8,13 @@ Saarthi is an AI-powered financial document navigator designed to empower every 
 
 Our mission is to bring transparency and confidence to your most important financial decisions.
 
+<img width="1897" height="905" alt="Screenshot 2025-10-17 230548" src="https://github.com/user-attachments/assets/1adec527-c2f4-4951-bb48-3752d849967b" />
+
+<img width="1306" height="813" alt="Screenshot 2025-10-17 230612" src="https://github.com/user-attachments/assets/4ce1992c-091c-447d-86a8-f97c11d93378" />
+
+<img width="1058" height="882" alt="Screenshot 2025-10-17 230634" src="https://github.com/user-attachments/assets/1b95a43f-f76a-4816-802c-1e59ca2bacc9" />
+
+
 
 
 ---
