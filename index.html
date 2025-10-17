@@ -1,0 +1,394 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saarthi | Jargon se Azadi</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Eczar:wght@500&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/feather-icons"></script>
+</head>
+<body>
+    <div class="background-animation"></div>
+
+    <div class="container">
+        <header class="hero-section">
+            <h1 class="logo">Saarthi <span class="hindi-logo">सारथी</span></h1>
+            <p class="tagline">Jargon se Azadi.</p>
+            <p class="subtitle">Financial clarity is now just a click away. Upload your loan agreement or policy document and let our AI guide you with simple, actionable insights.</p>
+        </header>
+
+        <main>
+            <div id="upload-section" class="card">
+                <h2>Analyze Your Document</h2>
+                <form id="upload-form">
+                    <div id="drop-zone">
+                        <input type="file" id="file-input" name="file" accept=".pdf" hidden>
+                        <i data-feather="upload-cloud" class="upload-icon"></i>
+                        <p><strong>Drag & drop your PDF here</strong><br>or click to select a file.</p>
+                        <span id="file-name"></span>
+                    </div>
+                    <button type="submit" id="analyze-button" disabled>
+                        <i data-feather="arrow-right-circle" class="button-icon"></i>
+                        Analyze with Saarthi
+                    </button>
+                </form>
+            </div>
+            
+            <div class="how-it-works card">
+                <h2>How It Works</h2>
+                <div class="steps-container">
+                    <div class="step">
+                        <div class="step-icon"><i data-feather="file-plus"></i></div>
+                        <h3>1. Upload Document</h3>
+                        <p>Securely upload your financial PDF.</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-icon"><i data-feather="cpu"></i></div>
+                        <h3>2. AI Analysis</h3>
+                        <p>Our AI scans for jargon, risks, and key details.</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-icon"><i data-feather="shield"></i></div>
+                        <h3>3. Get Clarity</h3>
+                        <p>Receive a simple, easy-to-read report.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="loading-section" class="card" style="display: none;">
+                 <div class="loader">
+                    <div class="scanner"></div>
+                    <span>ANALYZING...</span>
+                </div>
+                <h2>Reading the Fine Print...</h2>
+                <p>Saarthi is decoding the complexities for you. This may take a moment.</p>
+            </div>
+
+            <div id="error-section" class="card" style="display: none;">
+                 <i data-feather="alert-triangle" class="error-icon"></i>
+                <h2>An Error Occurred</h2>
+                <p id="error-message"></p>
+                <button onclick="resetUI()">Try Again</button>
+            </div>
+
+            <div id="results-section" style="display: none;"></div>
+
+        </main>
+        <footer>
+            <p>Powered by Gemini AI</p>
+        </footer>
+    </div>
+
+    <script>
+        feather.replace();
+
+        const uploadForm = document.getElementById('upload-form');
+        const fileInput = document.getElementById('file-input');
+        const dropZone = document.getElementById('drop-zone');
+        const fileNameSpan = document.getElementById('file-name');
+        const analyzeButton = document.getElementById('analyze-button');
+        
+        const uploadSection = document.getElementById('upload-section');
+        const howItWorksSection = document.querySelector('.how-it-works');
+        const loadingSection = document.getElementById('loading-section');
+        const errorSection = document.getElementById('error-section');
+        const resultsSection = document.getElementById('results-section');
+        const errorMessage = document.getElementById('error-message');
+
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type === 'application/pdf') {
+                fileInput.files = files;
+                updateFileName();
+            } else {
+                alert('Please drop a PDF file.');
+            }
+        });
+        fileInput.addEventListener('change', updateFileName);
+
+        function updateFileName() {
+            if (fileInput.files.length > 0) {
+                fileNameSpan.textContent = `Selected: ${fileInput.files[0].name}`;
+                analyzeButton.disabled = false;
+            } else {
+                fileNameSpan.textContent = '';
+                analyzeButton.disabled = true;
+            }
+        }
+
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!fileInput.files.length) {
+                alert("Please select a file first.");
+                return;
+            }
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            uploadSection.style.display = 'none';
+            howItWorksSection.style.display = 'none';
+            resultsSection.style.display = 'none';
+            errorSection.style.display = 'none';
+            loadingSection.style.display = 'flex';
+            analyzeButton.disabled = true;
+
+            try {
+                const response = await fetch('http://127.0.0.1:8000/analyze', {
+                    method: 'POST',
+                    body: formData,
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || `HTTP error! Status: ${response.status}`);
+                }
+                const data = await response.json();
+                displayResults(data);
+            } catch (error) {
+                console.error('Analysis failed:', error);
+                showError(error.message);
+            } finally {
+                loadingSection.style.display = 'none';
+                analyzeButton.disabled = false;
+            }
+        });
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorSection.style.display = 'flex';
+            feather.replace();
+        }
+
+        function resetUI() {
+            errorSection.style.display = 'none';
+            resultsSection.style.display = 'none';
+            uploadSection.style.display = 'block';
+            howItWorksSection.style.display = 'block';
+            fileNameSpan.textContent = '';
+            uploadForm.reset();
+            analyzeButton.disabled = true;
+        }
+        
+        function displayResults(data) {
+            resultsSection.innerHTML = '';
+            const summaryHTML = `
+                <div class="result-header">
+                    <h2>Analysis for: ${data.document_info.filename}</h2>
+                    <button onclick="resetUI()">
+                        <i data-feather="rotate-cw"></i> Start Over
+                    </button>
+                </div>
+                <div class="scores-grid">
+                    <div class="card score-card">
+                        <h3>Overall Risk Score</h3>
+                        <div class="score-circle-container">
+                            <svg class="score-circle-svg" viewBox="0 0 36 36">
+                                <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                <path class="circle risk-${getScoreCategory(data.overall_risk_score)}" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            </svg>
+                            <div class="score-text">
+                                <span class="score-value" data-final-score="${data.overall_risk_score}">0</span><small>/100</small>
+                            </div>
+                        </div>
+                        <p>${getRiskVerdict(data.overall_risk_score)}</p>
+                    </div>
+                     <div class="card score-card">
+                        <h3>Lender Trust Score</h3>
+                         <div class="score-circle-container">
+                             <svg class="score-circle-svg" viewBox="0 0 36 36">
+                                <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                <path class="circle trust-${getScoreCategory(data.trust_score, true)}" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            </svg>
+                             <div class="score-text">
+                                 <span class="score-value" data-final-score="${data.trust_score}">0</span><small>/100</small>
+                            </div>
+                        </div>
+                        <p>${getTrustVerdict(data.trust_score)}</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3><i data-feather="file-text"></i> Document Summary</h3>
+                    <p><strong>Type:</strong> ${data.document_summary.document_type}</p>
+                    <p><strong>Date:</strong> ${data.document_summary.document_date || 'N/A'}</p>
+                    <p><strong>Key Parties:</strong> ${data.document_summary.key_entities.join(', ')}</p>
+                    <p>${data.document_summary.summary}</p>
+                </div>
+            `;
+            const recommendationsHTML = createListCard('<i data-feather="thumbs-up"></i> Key Recommendations', data.recommendations, item => `<li>${item}</li>`);
+            const keyDetailsHTML = createTableCard('<i data-feather="list"></i> Key Details', data.key_details, ['Label', 'Value'], item => `<td>${item.label}</td><td>${item.value}</td>`);
+            const redFlagsHTML = createRedFlagsCard(data.red_flags);
+            const jargonHTML = createJargonCard(data.jargon_buster);
+            const complianceHTML = createComplianceCard(data.compliance_checks);
+
+            resultsSection.innerHTML = summaryHTML + recommendationsHTML + redFlagsHTML + keyDetailsHTML + jargonHTML + complianceHTML;
+            resultsSection.style.display = 'block';
+
+            feather.replace();
+            animateScores();
+        }
+
+        function animateScores() {
+            const scoreValues = document.querySelectorAll('.score-value');
+            scoreValues.forEach(scoreValue => {
+                const finalScore = parseInt(scoreValue.dataset.finalScore);
+                const circle = scoreValue.closest('.score-circle-container').querySelector('.circle');
+                
+                setTimeout(() => {
+                    circle.style.strokeDasharray = `${finalScore}, 100`;
+                }, 100);
+
+                let start = 0;
+                const duration = 1500;
+                const stepTime = Math.abs(Math.floor(duration / finalScore)) || 1;
+                
+                const timer = setInterval(() => {
+                    start += 1;
+                    if (start > finalScore) {
+                        scoreValue.textContent = finalScore;
+                        clearInterval(timer);
+                        return;
+                    }
+                    scoreValue.textContent = start;
+                    if (start === finalScore) {
+                        clearInterval(timer);
+                    }
+                }, stepTime);
+            });
+        }
+
+        // --- CORRECTED FUNCTION ---
+        function getScoreCategory(score, isTrust = false) {
+            if (isTrust) {
+                // Logic for Trust Score (High score is good)
+                if (score < 60) return 'low';
+                if (score < 80) return 'medium';
+                return 'high';
+            } else {
+                // Logic for Risk Score (High score is bad)
+                if (score > 70) return 'high';   // High score = high risk (red)
+                if (score > 40) return 'medium'; // Medium score = medium risk (yellow)
+                return 'low';    // Low score = low risk (green)
+            }
+        }
+
+        function getRiskVerdict(score) {
+            if (score > 70) return "High risk detected. Proceed with extreme caution.";
+            if (score > 40) return "Moderate risk. Review flagged items carefully.";
+            return "Low risk. Terms appear generally fair.";
+        }
+
+        function getTrustVerdict(score) {
+            if (score < 60) return "Low trust. Lender may lack transparency.";
+            if (score < 80) return "Moderate trust. Generally compliant.";
+            return "High trust. Lender appears compliant and transparent.";
+        }
+
+        function createListCard(title, items, renderFn) {
+            if (!items || items.length === 0) return '';
+            const listItems = items.map(renderFn).join('');
+            return `<div class="card"><h3>${title}</h3><ul>${listItems}</ul></div>`;
+        }
+
+        function createTableCard(title, items, headers, renderRowFn) {
+            if (!items || items.length === 0) return '';
+            const headerRow = `<tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>`;
+            const bodyRows = items.map(item => `<tr>${renderRowFn(item)}</tr>`).join('');
+            return `<div class="card"><h3>${title}</h3><div class="table-container"><table><thead>${headerRow}</thead><tbody>${bodyRows}</tbody></table></div></div>`;
+        }
+
+        function createRedFlagsCard(items) {
+             if (!items || items.length === 0) {
+                 return createListCard('<i data-feather="check-circle"></i> Red Flags', ['No significant red flags were found.'], item => `<li>${item}</li>`);
+            }
+            const flagItems = items.map(flag => {
+                let icon;
+                switch(flag.severity.toLowerCase()) {
+                    case 'high':
+                    case 'critical':
+                        icon = 'alert-octagon';
+                        break;
+                    case 'medium':
+                        icon = 'alert-triangle';
+                        break;
+                    default:
+                        icon = 'info';
+                }
+                return `
+                <div class="flag-item severity-${flag.severity.toLowerCase()}">
+                    <div class="flag-header">
+                        <strong><i data-feather="${icon}"></i> ${flag.title}</strong>
+                        <span class="severity-badge">${flag.severity.toUpperCase()}</span>
+                    </div>
+                    <p><strong>Description:</strong> ${flag.description}</p>
+                    <p><strong>Impact:</strong> ${flag.impact}</p>
+                    <p><strong>Recommendation:</strong> ${flag.recommendation}</p>
+                </div>
+            `}).join('');
+            return `<div class="card"><h3><i data-feather="flag"></i> Red Flags Found</h3>${flagItems}</div>`;
+        }
+
+        function createJargonCard(items) {
+             if (!items || items.length === 0) return '';
+             const jargonItems = items.map(item => `
+                <details class="jargon-item">
+                    <summary>
+                        <strong>${item.term}</strong> 
+                        <span class="hindi-term">${item.hindi_translation || ''}</span>
+                        <i data-feather="chevron-down" class="chevron-icon"></i>
+                    </summary>
+                    <div class="jargon-content">
+                        <p>${item.simple_explanation}</p>
+                        ${item.example ? `<p class="example"><strong>Example:</strong> ${item.example}</p>` : ''}
+                    </div>
+                </details>
+             `).join('');
+             return `<div class="card"><h3><i data-feather="book-open"></i> Jargon Buster</h3>${jargonItems}</div>`;
+        }
+
+        function createComplianceCard(items) {
+            if (!items || items.length === 0) return '';
+            const complianceItems = items.map(item => {
+                const status = item.status || 'unclear';
+                let icon, iconClass;
+                switch(status.toLowerCase()) {
+                    case 'compliant':
+                        icon = 'check-circle';
+                        iconClass = 'status-compliant';
+                        break;
+                    case 'non-compliant':
+                        icon = 'x-circle';
+                        iconClass = 'status-non-compliant';
+                        break;
+                    default:
+                        icon = 'help-circle';
+                        iconClass = 'status-unclear';
+                }
+                return `
+                <div class="compliance-item">
+                    <i data-feather="${icon}" class="status-icon ${iconClass}"></i>
+                    <div>
+                        <strong>${item.aspect}</strong>
+                        <p>${item.details}</p>
+                    </div>
+                </div>
+            `}).join('');
+            return `<div class="card"><h3><i data-feather="shield-check"></i> RBI Compliance Check</h3>${complianceItems}</div>`;
+        }
+
+    </script>
+</body>
+</html>
