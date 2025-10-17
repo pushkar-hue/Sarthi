@@ -59,7 +59,7 @@ graph TD;
 Our platform is built with a modern, scalable tech stack:
 
   * **Backend:** Python, FastAPI, PyMuPDF, Google Gemini 2.0
-  * **Frontend:** React, TypeScript, Axios, Chakra UI
+  * **Frontend:** React, TypeScript, javascript, HTML, CSS
   * **Deployment:** Docker, Uvicorn
 
 -----
